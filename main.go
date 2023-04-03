@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
@@ -153,7 +154,9 @@ func (d *diff) CompareFolders() map[string][]string {
 			if strings.HasPrefix(sfile, "Data\\") {
 				diffFiles = append(diffFiles, sfile)
 			} else {
-				rootFiles = append(rootFiles, sfile)
+				if !strings.HasSuffix(sfile, ".exe") {
+					rootFiles = append(rootFiles, sfile)
+				}
 			}
 		}
 	}
@@ -210,12 +213,16 @@ func main() {
 	sourceDir := "Genshin Impact game"
 	targetDir := "YuanShen"
 	for !pathExists(sourceDir) {
-		fmt.Print("请输入「源文件夹」的路径：")
-		fmt.Scanln(&sourceDir)
+		fmt.Print("请输入「源文件夹」的路径（支持拖放）：")
+		reader := bufio.NewReader(os.Stdin)
+		sourceDir, _ = reader.ReadString('\n')
+		sourceDir = strings.Trim(strings.TrimSpace(sourceDir), "\"")
 	}
 	for !pathExists(targetDir) {
-		fmt.Print("请输入「换服包」的路径：")
-		fmt.Scanln(&targetDir)
+		fmt.Print("请输入「换服包」的路径（支持拖放）：")
+		reader := bufio.NewReader(os.Stdin)
+		targetDir, _ = reader.ReadString('\n')
+		targetDir = strings.Trim(strings.TrimSpace(targetDir), "\"")
 	}
 	d := newDiff()
 	d.Init(sourceDir, targetDir)
