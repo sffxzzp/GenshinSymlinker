@@ -1,0 +1,25 @@
+name: build
+
+on:
+  repository_dispatch:
+    types: [build-on-demand]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Go build
+        uses: izumin5210/action-go-crossbuild@v1.0.0
+        with:
+          arch: amd64
+          ldflags: "-s -w"
+          os: windows
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: GenshinSymlinker
+          path: ./dist
