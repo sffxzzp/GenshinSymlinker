@@ -1,0 +1,2 @@
+# GenshinSymlinker
+通过创建符号链接的方式来实现原神多版本共存
