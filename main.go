@@ -152,7 +152,9 @@ func (d *diff) CompareFolders() map[string][]string {
 		}
 		if !included {
 			if strings.HasPrefix(sfile, "Data\\") {
-				diffFiles = append(diffFiles, sfile)
+				if !strings.HasSuffix(sfile, "PCGameSDK.dll") {
+					diffFiles = append(diffFiles, sfile)
+				}
 			} else {
 				if !strings.HasSuffix(sfile, ".exe") {
 					rootFiles = append(rootFiles, sfile)
