@@ -1,4 +1,4 @@
-package genshin
+package utils
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ type (
 		MD5        string `json:"md5"`
 		FileSize   int    `json:"fileSize"`
 	}
-	Genshin struct {
+	Game struct {
 		Version   string
 		baseUrlCN string
 		baseUrlEN string
@@ -43,11 +43,48 @@ type (
 	}
 )
 
-func New() *Genshin {
-	return &Genshin{}
+func PathExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		fmt.Printf("%s 未找到！\n", path)
+		return false
+	}
+	return true
 }
 
-func httpGet(url string) []byte {
+func IsDirEmpty(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+	_, err = f.Readdir(1)
+	if err == nil {
+		return false
+	}
+	if err == io.EOF {
+		return true
+	}
+	return true
+}
+
+func DetectGame(path string) string {
+	retStr := ""
+	_, err := os.Stat(filepath.Join(path, "GenshinImpact_Data"))
+	if !os.IsNotExist(err) {
+		retStr += "Genshin"
+	}
+	_, err = os.Stat(filepath.Join(path, "YuanShen_Data"))
+	if !os.IsNotExist(err) {
+		retStr += "Genshin"
+	}
+	_, err = os.Stat(filepath.Join(path, "StarRail_Data"))
+	if !os.IsNotExist(err) {
+		retStr += "StarRail"
+	}
+	return retStr
+}
+
+func HttpGet(url string) []byte {
 	res, err := http.Get(url)
 	if err != nil {
 		return []byte{}
@@ -60,44 +97,7 @@ func httpGet(url string) []byte {
 	return data
 }
 
-func changeVer(str string) string {
-	if strings.HasPrefix(str, "GenshinImpact_") {
-		return strings.Replace(str, "GenshinImpact_", "YuanShen_", -1)
-	}
-	if strings.HasPrefix(str, "YuanShen_") {
-		return strings.Replace(str, "YuanShen_", "GenshinImpact_", -1)
-	}
-	return str
-}
-
-func (g *Genshin) handlePkg(pkg *[][]byte) *map[string]string {
-	pkgFiles := make(map[string]string)
-	for _, f := range *pkg {
-		var fInfo PkgFile
-		json.Unmarshal(f, &fInfo)
-		pkgFiles[fInfo.RemoteName] = fInfo.MD5
-	}
-	return &pkgFiles
-}
-
-func (g *Genshin) fileDiff(pCN *map[string]string, pEN *map[string]string) (dCN []string, dEN []string) {
-	dCN = g.fileDiffRaw(pEN, pCN)
-	dEN = g.fileDiffRaw(pCN, pEN)
-	return dCN, dEN
-}
-
-func (g *Genshin) fileDiffRaw(a *map[string]string, b *map[string]string) (o []string) {
-	for rname, md5 := range *b {
-		aMD5 := (*a)[changeVer(rname)]
-		if md5 != aMD5 {
-			o = append(o, rname)
-		}
-	}
-	o = append(o, "pkg_version")
-	return o
-}
-
-func (g *Genshin) downFile(url string, path string) bool {
+func DownFile(url string, path string) bool {
 	res, err := http.Get(url)
 	if err != nil {
 		return false
@@ -117,10 +117,47 @@ func (g *Genshin) downFile(url string, path string) bool {
 	return err == nil
 }
 
-func (g *Genshin) Compare(skip bool) {
+func (g *Game) changeVer(str string) string {
+	if strings.HasPrefix(str, "GenshinImpact_") {
+		return strings.Replace(str, "GenshinImpact_", "YuanShen_", -1)
+	}
+	if strings.HasPrefix(str, "YuanShen_") {
+		return strings.Replace(str, "YuanShen_", "GenshinImpact_", -1)
+	}
+	return str
+}
+
+func (g *Game) handlePkg(pkg *[][]byte) *map[string]string {
+	pkgFiles := make(map[string]string)
+	for _, f := range *pkg {
+		var fInfo PkgFile
+		json.Unmarshal(f, &fInfo)
+		pkgFiles[fInfo.RemoteName] = fInfo.MD5
+	}
+	return &pkgFiles
+}
+
+func (g *Game) fileDiff(pCN *map[string]string, pEN *map[string]string) (dCN []string, dEN []string) {
+	dCN = g.fileDiffRaw(pEN, pCN)
+	dEN = g.fileDiffRaw(pCN, pEN)
+	return dCN, dEN
+}
+
+func (g *Game) fileDiffRaw(a *map[string]string, b *map[string]string) (o []string) {
+	for rname, md5 := range *b {
+		aMD5 := (*a)[g.changeVer(rname)]
+		if md5 != aMD5 {
+			o = append(o, rname)
+		}
+	}
+	o = append(o, "pkg_version")
+	return o
+}
+
+func (g *Game) NCompare(urlCN, urlEN string, skip bool) {
 	var resCN, resEN Resource
-	json.Unmarshal(httpGet("https://sdk-static.mihoyo.com/hk4e_cn/mdk/launcher/api/resource?launcher_id=17&key=KAtdSsoQ&channel_id=14"), &resCN)
-	json.Unmarshal(httpGet("https://sdk-os-static.hoyoverse.com/hk4e_global/mdk/launcher/api/resource?key=gcStgarh&launcher_id=10&sub_channel_id=3"), &resEN)
+	json.Unmarshal(HttpGet(urlCN), &resCN)
+	json.Unmarshal(HttpGet(urlEN), &resEN)
 	next := false
 	if resCN.Data.PreGame.Latest.Version != "" && !skip {
 		var input string
@@ -146,14 +183,14 @@ func (g *Genshin) Compare(skip bool) {
 		g.baseUrlCN = resCN.Data.Game.Latest.BaseUrl
 		g.baseUrlEN = resEN.Data.Game.Latest.BaseUrl
 	}
-	pkgCN := bytes.Split(httpGet(g.baseUrlCN+"/pkg_version"), []byte{'\r', '\n'})
-	pkgEN := bytes.Split(httpGet(g.baseUrlEN+"/pkg_version"), []byte{'\r', '\n'})
+	pkgCN := bytes.Split(HttpGet(g.baseUrlCN+"/pkg_version"), []byte{'\r', '\n'})
+	pkgEN := bytes.Split(HttpGet(g.baseUrlEN+"/pkg_version"), []byte{'\r', '\n'})
 	pkgFilesCN := g.handlePkg(&pkgCN)
 	pkgFilesEN := g.handlePkg(&pkgEN)
 	g.dFilesCN, g.dFilesEN = g.fileDiff(pkgFilesCN, pkgFilesEN)
 }
 
-func (g *Genshin) Download(isCN bool, path string) {
+func (g *Game) Download(isCN bool, path string) {
 	var filelist []string
 	var baseUrl string
 	if isCN {
@@ -168,7 +205,7 @@ func (g *Genshin) Download(isCN bool, path string) {
 		fmt.Println(f)
 		count := 0
 		for count < 3 {
-			if g.downFile(baseUrl+"/"+f, filepath.Join(path, f)) {
+			if DownFile(baseUrl+"/"+f, filepath.Join(path, f)) {
 				break
 			} else {
 				fmt.Println("下载出错！文件：" + f)

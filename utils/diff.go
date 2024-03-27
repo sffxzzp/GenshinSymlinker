@@ -1,4 +1,4 @@
-package genshin
+package utils
 
 import (
 	"fmt"
@@ -147,7 +147,11 @@ func (d *diff) CompareFolders() map[string][]string {
 					diffFiles = append(diffFiles, sfile)
 				}
 			} else {
-				if !strings.HasSuffix(sfile, ".exe") {
+				if strings.HasSuffix(sfile, ".exe") || strings.HasSuffix(sfile, ".dmp") {
+					if strings.HasSuffix(sfile, "UnityCrashHandler64.exe") {
+						rootFiles = append(rootFiles, sfile)
+					}
+				} else {
 					rootFiles = append(rootFiles, sfile)
 				}
 			}
