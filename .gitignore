@@ -16,4 +16,5 @@
 
 # Other files
 .vscode
+patchdown
 build.bat
