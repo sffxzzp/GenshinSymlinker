@@ -16,18 +16,23 @@ type (
 		Retcode int    `json:"retcode"`
 		Message string `json:"message"`
 		Data    struct {
-			Game struct {
-				Latest ResGame `json:"latest"`
-			} `json:"game"`
-			PreGame struct {
-				Latest ResGame `json:"latest"`
-			} `json:"pre_download_game"`
+			GamePackages []struct {
+				Type struct {
+					ID   string `json:"id"`
+					Name string `json:"biz"`
+				} `json:"game"`
+				Game struct {
+					Major ResGame `json:"major"`
+				} `json:"main"`
+				PreGame struct {
+					Major ResGame `json:"major"`
+				} `json:"pre_download"`
+			} `json:"game_packages"`
 		} `json:"data"`
 	}
 	ResGame struct {
-		Name    string `json:"name"`
 		Version string `json:"version"`
-		BaseUrl string `json:"decompressed_path"`
+		BaseUrl string `json:"res_list_url"`
 	}
 	PkgFile struct {
 		RemoteName string `json:"remoteName"`
@@ -159,10 +164,10 @@ func (g *Game) NCompare(urlCN, urlEN string, skip bool) {
 	json.Unmarshal(HttpGet(urlCN), &resCN)
 	json.Unmarshal(HttpGet(urlEN), &resEN)
 	next := false
-	if resCN.Data.PreGame.Latest.Version != "" && !skip {
+	if resCN.Data.GamePackages[0].PreGame.Major.Version != "" && !skip {
 		var input string
 		for strings.ToUpper(input) != "Y" && strings.ToUpper(input) != "N" {
-			fmt.Println("检测到版本 " + resCN.Data.PreGame.Latest.Version + " 的预下载包，是否下载下一版本的换服包（y/N）：")
+			fmt.Println("检测到版本 " + resCN.Data.GamePackages[0].PreGame.Major.Version + " 的预下载包，是否下载下一版本的换服包（y/N）：")
 			fmt.Scanln(&input)
 		}
 		switch strings.ToUpper(input) {
@@ -175,13 +180,13 @@ func (g *Game) NCompare(urlCN, urlEN string, skip bool) {
 		}
 	}
 	if next {
-		g.Version = resCN.Data.PreGame.Latest.Version
-		g.baseUrlCN = resCN.Data.PreGame.Latest.BaseUrl
-		g.baseUrlEN = resEN.Data.PreGame.Latest.BaseUrl
+		g.Version = resCN.Data.GamePackages[0].PreGame.Major.Version
+		g.baseUrlCN = resCN.Data.GamePackages[0].PreGame.Major.BaseUrl
+		g.baseUrlEN = resEN.Data.GamePackages[0].PreGame.Major.BaseUrl
 	} else {
-		g.Version = resCN.Data.Game.Latest.Version
-		g.baseUrlCN = resCN.Data.Game.Latest.BaseUrl
-		g.baseUrlEN = resEN.Data.Game.Latest.BaseUrl
+		g.Version = resCN.Data.GamePackages[0].Game.Major.Version
+		g.baseUrlCN = resCN.Data.GamePackages[0].Game.Major.BaseUrl
+		g.baseUrlEN = resEN.Data.GamePackages[0].Game.Major.BaseUrl
 	}
 	pkgCN := bytes.Split(HttpGet(g.baseUrlCN+"/pkg_version"), []byte{'\r', '\n'})
 	pkgEN := bytes.Split(HttpGet(g.baseUrlEN+"/pkg_version"), []byte{'\r', '\n'})
