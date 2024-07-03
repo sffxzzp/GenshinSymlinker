@@ -12,14 +12,14 @@ func main() {
 	sourceDir := "原神/星铁/绝区零 源文件夹"
 	targetDir := "原神/星铁/绝区零 目标文件夹"
 	for !utils.PathExists(sourceDir) {
-		fmt.Print("请输入游戏「源文件夹」的路径（支持拖放）：")
+		fmt.Print("请输入游戏「源文件夹」的路径：")
 		reader := bufio.NewReader(os.Stdin)
 		sourceDir, _ = reader.ReadString('\n')
 		sourceDir = strings.Trim(strings.TrimSpace(sourceDir), "\"")
 	}
 	gameType := utils.DetectGame(sourceDir)
 	for !utils.PathExists(targetDir) {
-		fmt.Print("请输入游戏「换服包」的路径（支持拖放）：")
+		fmt.Print("请输入游戏「换服包」的路径：")
 		reader := bufio.NewReader(os.Stdin)
 		targetDir, _ = reader.ReadString('\n')
 		targetDir = strings.Trim(strings.TrimSpace(targetDir), "\"")
