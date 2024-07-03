@@ -86,6 +86,10 @@ func DetectGame(path string) string {
 	if !os.IsNotExist(err) {
 		retStr += "StarRail"
 	}
+	_, err = os.Stat(filepath.Join(path, "ZenlessZoneZero_Data"))
+	if !os.IsNotExist(err) {
+		retStr += "ZZZ"
+	}
 	return retStr
 }
 

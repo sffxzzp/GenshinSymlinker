@@ -9,17 +9,17 @@ import (
 )
 
 func main() {
-	sourceDir := "原神/铁道 源文件夹"
-	targetDir := "原神/铁道 目标文件夹"
+	sourceDir := "原神/星铁/绝区零 源文件夹"
+	targetDir := "原神/星铁/绝区零 目标文件夹"
 	for !utils.PathExists(sourceDir) {
-		fmt.Print("请输入原神/星铁「源文件夹」的路径（支持拖放）：")
+		fmt.Print("请输入游戏「源文件夹」的路径（支持拖放）：")
 		reader := bufio.NewReader(os.Stdin)
 		sourceDir, _ = reader.ReadString('\n')
 		sourceDir = strings.Trim(strings.TrimSpace(sourceDir), "\"")
 	}
 	gameType := utils.DetectGame(sourceDir)
 	for !utils.PathExists(targetDir) {
-		fmt.Print("请输入原神/星铁「换服包」的路径（支持拖放）：")
+		fmt.Print("请输入游戏「换服包」的路径（支持拖放）：")
 		reader := bufio.NewReader(os.Stdin)
 		targetDir, _ = reader.ReadString('\n')
 		targetDir = strings.Trim(strings.TrimSpace(targetDir), "\"")
@@ -28,6 +28,7 @@ func main() {
 		fmt.Println("检测到「换服包」目录内容为空，将下载换服包…")
 		var gs *utils.Genshin
 		var sr *utils.StarRail
+		var zzz *utils.ZZZ
 		if gameType == "Genshin" {
 			fmt.Println("正在加载原神版本信息，请稍候…")
 			gs = utils.NewGenshin()
@@ -38,6 +39,11 @@ func main() {
 			sr = utils.NewStarRail()
 			sr.Compare(true)
 			fmt.Println("版本：", sr.Version)
+		} else if gameType == "ZZZ" {
+			fmt.Println("正在加载绝区零版本信息，请稍候…")
+			zzz = utils.NewZZZ()
+			zzz.Compare(true)
+			fmt.Println("版本：", zzz.Version)
 		}
 		var input string
 		for strings.ToUpper(input) != "CN" && strings.ToUpper(input) != "EN" {
@@ -57,6 +63,8 @@ func main() {
 			gs.Download(isCN, targetDir)
 		} else if gameType == "StarRail" {
 			sr.Download(isCN, targetDir)
+		} else if gameType == "ZZZ" {
+			zzz.Download(isCN, targetDir)
 		}
 		fmt.Println("换服包下载完成！")
 	}
