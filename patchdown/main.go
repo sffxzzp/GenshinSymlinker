@@ -10,20 +10,25 @@ import (
 func main() {
 	var gs *utils.Genshin
 	var sr *utils.StarRail
-	downTypeUI := map[int]string{1: "原神", 2: "星铁"}
+	var zzz *utils.ZZZ
+	downTypeUI := map[int]string{1: "原神", 2: "星铁", 3: "绝区零"}
 	var typeSelect int
 	for typeSelect != 1 && typeSelect != 2 {
-		fmt.Print("游戏\n1. " + downTypeUI[1] + "\n2. " + downTypeUI[2] + "\n\n请选择（1/2）：")
+		fmt.Print("游戏\n1. " + downTypeUI[1] + "\n2. " + downTypeUI[2] + "\n\n请选择（1/2/3）：")
 		fmt.Scanln(&typeSelect)
 	}
 	if typeSelect == 1 {
 		fmt.Println("正在加载" + downTypeUI[typeSelect] + "版本信息，请稍候…")
 		gs = utils.NewGenshin()
 		gs.Compare(false)
-	} else {
+	} else if typeSelect == 2 {
 		fmt.Println("正在加载" + downTypeUI[typeSelect] + "版本信息，请稍候…")
 		sr = utils.NewStarRail()
 		sr.Compare(false)
+	} else {
+		fmt.Println("正在加载" + downTypeUI[typeSelect] + "版本信息，请稍候…")
+		zzz = utils.NewZZZ()
+		zzz.Compare(false)
 	}
 	var input string
 	for input != "CN" && input != "EN" {
