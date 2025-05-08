@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+// func main() {
+// 	GameEN := utils.NewSophonGame(false)
+// 	GameEN.GetManifest("Genshin")
+// 	GameCN := utils.NewSophonGame(true)
+// 	GameCN.GetManifest("Genshin")
+// 	utils.SophonDiff(GameEN, GameCN)
+// 	GameEN.Download("Z:\\Genshin")
+// }
+
 func main() {
 	sourceDir := "原神/星铁/绝区零 源文件夹"
 	targetDir := "原神/星铁/绝区零 目标文件夹"

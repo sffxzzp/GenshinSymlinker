@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 type (
@@ -106,6 +108,25 @@ func HttpGet(url string) []byte {
 	return data
 }
 
+func ZstdGet(url string) []byte {
+	res, err := http.Get(url)
+	if err != nil {
+		return []byte{}
+	}
+	defer res.Body.Close()
+	decoder, err := zstd.NewReader(res.Body)
+	if err != nil {
+		return []byte{}
+	}
+	defer decoder.Close()
+	var out bytes.Buffer
+	_, err = io.Copy(&out, decoder)
+	if err != nil {
+		return []byte{}
+	}
+	return out.Bytes()
+}
+
 func DownFile(url string, path string) bool {
 	res, err := http.Get(url)
 	if err != nil {
@@ -126,7 +147,7 @@ func DownFile(url string, path string) bool {
 	return err == nil
 }
 
-func (g *Game) changeVer(str string) string {
+func changeVer(str string) string {
 	if strings.HasPrefix(str, "GenshinImpact_") {
 		return strings.Replace(str, "GenshinImpact_", "YuanShen_", -1)
 	}
@@ -154,7 +175,7 @@ func (g *Game) fileDiff(pCN *map[string]string, pEN *map[string]string) (dCN []s
 
 func (g *Game) fileDiffRaw(a *map[string]string, b *map[string]string) (o []string) {
 	for rname, md5 := range *b {
-		aMD5 := (*a)[g.changeVer(rname)]
+		aMD5 := (*a)[changeVer(rname)]
 		if md5 != aMD5 {
 			o = append(o, rname)
 		}
