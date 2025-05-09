@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	sync "sync"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -15,9 +16,9 @@ type (
 	SophonGame struct {
 		BizDict     map[string]string
 		Games       map[string]BranchGame
+		PreGames    map[string]BranchGame
 		LauncherId  map[string]string
 		isCN        bool
-		Pre         bool
 		ChunkPrefix string
 		FileList    []*SophonChunkFile
 		DiffList    []*SophonChunkFile
@@ -85,6 +86,10 @@ type (
 		FileCount        string `json:"file_count"`
 		ChunkCount       string `json:"chunk_count"`
 	}
+	ChunkDownResult struct {
+		Offset int64
+		Data   []byte
+	}
 )
 
 func NewSophonGame(isCN bool) *SophonGame {
@@ -101,8 +106,9 @@ func NewSophonGame(isCN bool) *SophonGame {
 			"cn": "jGHBHlcOq1",
 			"en": "VYTpXlbWo8",
 		},
-		Games: make(map[string]BranchGame),
-		isCN:  isCN,
+		PreGames: make(map[string]BranchGame),
+		Games:    make(map[string]BranchGame),
+		isCN:     isCN,
 	}
 	ret.GetVersion()
 	return ret
@@ -126,50 +132,41 @@ func (s *SophonGame) GetVersion() {
 			continue
 		}
 		if game.Pre.PackageId != "" {
-			s.Pre = true
-			s.Games[biz] = BranchGame{
+			s.PreGames[biz] = BranchGame{
 				PackageId: game.Pre.PackageId,
 				Branch:    game.Pre.Branch,
 				Password:  game.Pre.Password,
 				Version:   game.Pre.Version,
 			}
-		} else {
-			s.Games[biz] = BranchGame{
-				PackageId: game.Main.PackageId,
-				Branch:    game.Main.Branch,
-				Password:  game.Main.Password,
-				Version:   game.Main.Version,
-			}
+		}
+		s.Games[biz] = BranchGame{
+			PackageId: game.Main.PackageId,
+			Branch:    game.Main.Branch,
+			Password:  game.Main.Password,
+			Version:   game.Main.Version,
 		}
 	}
 }
 
-func (s *SophonGame) getGameByGameType(gameType string) string {
-	if gameType == "Genshin" {
-		gameType = "hk4e"
-	} else if gameType == "StarRail" {
-		gameType = "hkrpg"
-	} else if gameType == "ZZZ" {
-		gameType = "nap"
-	} else {
-		return ""
+func (s *SophonGame) GameExists(gameType string) bool {
+	biz := GetGameByGameType(gameType, s.isCN)
+	if _, ok := s.Games[biz]; ok {
+		return true
 	}
-	if s.isCN {
-		gameType += "_cn"
-	} else {
-		gameType += "_global"
-	}
-	return gameType
+	return false
 }
 
-func (s *SophonGame) GetManifest(gameType string) {
+func (s *SophonGame) GetManifest(gameType string, next bool) {
 	apiBase := "https://%s/downloader/sophon_chunk/api/getBuild?branch=%s&package_id=%s&password=%s"
 	host := "sg-downloader-api.hoyoverse.com"
 	if s.isCN {
 		host = "downloader-api.mihoyo.com"
 	}
-	biz := s.getGameByGameType(gameType)
+	biz := GetGameByGameType(gameType, s.isCN)
 	url := fmt.Sprintf(apiBase, host, s.Games[biz].Branch, s.Games[biz].PackageId, s.Games[biz].Password)
+	if _, ok := s.PreGames[biz]; ok && next {
+		url = fmt.Sprintf(apiBase, host, s.PreGames[biz].Branch, s.PreGames[biz].PackageId, s.PreGames[biz].Password)
+	}
 	res := HttpGet(url)
 	var chunkRes ChunkInfo
 	json.Unmarshal(res, &chunkRes)
@@ -187,12 +184,34 @@ func (s *SophonGame) GetManifest(gameType string) {
 
 func (f *SophonChunkFile) Download(urlPrefix string, path string) bool {
 	buf := make([]byte, f.Size)
+
+	// 使用并发 10 线程下载
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 10)
+	results := make(chan ChunkDownResult, len(f.Chunks))
+
 	for _, chunk := range f.Chunks {
-		chunkData := ZstdGet(urlPrefix + "/" + chunk.Id)
-		start := chunk.Offset
-		end := chunk.Offset + int64(len(chunkData))
-		copy(buf[start:end], chunkData)
+		wg.Add(1)
+		go func(chk *SophonChunk) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			chunkData := ZstdGet(urlPrefix + "/" + chk.Id)
+			results <- ChunkDownResult{Offset: chk.Offset, Data: chunkData}
+		}(chunk)
 	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for result := range results {
+		start := result.Offset
+		end := result.Offset + int64(len(result.Data))
+		copy(buf[start:end], result.Data)
+	}
+
 	hash := md5.Sum(buf)
 	if hex.EncodeToString(hash[:]) == f.Md5 {
 		filePath := filepath.Join(path, f.File)
@@ -214,6 +233,12 @@ func (f *SophonChunkFile) Download(urlPrefix string, path string) bool {
 
 func (s *SophonGame) Download(path string) {
 	fmt.Println("正在下载：")
+	size := int64(0)
+	for _, file := range s.DiffList {
+		size += file.Size
+	}
+	fmt.Printf("总大小：%.2fMB\n", float64(size)/1024/1024)
+	fmt.Printf("文件数：%d\n", len(s.DiffList))
 	for _, file := range s.DiffList {
 		fmt.Println(file.File)
 		count := 0
@@ -245,4 +270,6 @@ func SophonDiff(SophonA, SophonB *SophonGame) {
 			SophonB.DiffList = append(SophonB.DiffList, f)
 		}
 	}
+	SophonA.FileList = nil
+	SophonB.FileList = nil
 }

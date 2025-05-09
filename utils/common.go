@@ -109,22 +109,27 @@ func HttpGet(url string) []byte {
 }
 
 func ZstdGet(url string) []byte {
-	res, err := http.Get(url)
-	if err != nil {
-		return []byte{}
+	count := 0
+	for count < 3 {
+		res, err := http.Get(url)
+		if err != nil {
+			continue
+		}
+		defer res.Body.Close()
+		decoder, err := zstd.NewReader(res.Body)
+		if err != nil {
+			continue
+		}
+		defer decoder.Close()
+		var out bytes.Buffer
+		_, err = io.Copy(&out, decoder)
+		if err != nil {
+			continue
+		}
+		count++
+		return out.Bytes()
 	}
-	defer res.Body.Close()
-	decoder, err := zstd.NewReader(res.Body)
-	if err != nil {
-		return []byte{}
-	}
-	defer decoder.Close()
-	var out bytes.Buffer
-	_, err = io.Copy(&out, decoder)
-	if err != nil {
-		return []byte{}
-	}
-	return out.Bytes()
+	return []byte{}
 }
 
 func DownFile(url string, path string) bool {
@@ -155,6 +160,37 @@ func changeVer(str string) string {
 		return strings.Replace(str, "YuanShen_", "GenshinImpact_", -1)
 	}
 	return str
+}
+
+func GetGameByGameType(gameType string, isCN bool) string {
+	if gameType == "Genshin" {
+		gameType = "hk4e"
+	} else if gameType == "StarRail" {
+		gameType = "hkrpg"
+	} else if gameType == "ZZZ" {
+		gameType = "nap"
+	} else {
+		return ""
+	}
+	if isCN {
+		gameType += "_cn"
+	} else {
+		gameType += "_global"
+	}
+	return gameType
+}
+
+func IsPreDownload(version string) bool {
+	var input string
+	next := false
+	for strings.ToUpper(input) != "Y" && strings.ToUpper(input) != "N" {
+		fmt.Println("检测到版本 " + version + " 的预下载包，是否下载下一版本的换服包（y/N）：")
+		fmt.Scanln(&input)
+	}
+	if strings.ToUpper(input) == "Y" {
+		next = true
+	}
+	return next
 }
 
 func (g *Game) handlePkg(pkg *[][]byte) *map[string]string {
@@ -190,19 +226,7 @@ func (g *Game) NCompare(urlCN, urlEN string, skip bool) {
 	json.Unmarshal(HttpGet(urlEN), &resEN)
 	next := false
 	if resCN.Data.GamePackages[0].PreGame.Major.Version != "" && !skip {
-		var input string
-		for strings.ToUpper(input) != "Y" && strings.ToUpper(input) != "N" {
-			fmt.Println("检测到版本 " + resCN.Data.GamePackages[0].PreGame.Major.Version + " 的预下载包，是否下载下一版本的换服包（y/N）：")
-			fmt.Scanln(&input)
-		}
-		switch strings.ToUpper(input) {
-		case "Y":
-			next = true
-		case "N":
-			next = false
-		default:
-			next = false
-		}
+		next = IsPreDownload(resCN.Data.GamePackages[0].PreGame.Major.Version)
 	}
 	if next {
 		g.Version = resCN.Data.GamePackages[0].PreGame.Major.Version
@@ -231,6 +255,7 @@ func (g *Game) Download(isCN bool, path string) {
 		baseUrl = g.baseUrlEN
 	}
 	fmt.Println("正在下载：")
+	fmt.Println("文件数：", len(filelist))
 	for _, f := range filelist {
 		fmt.Println(f)
 		count := 0
