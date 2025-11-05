@@ -9,12 +9,14 @@ GenshinSymlinker 允许用户在同一设备上运行《原神》、《星铁》
 ## Notes / 注意事项
 
 **English**:  
+- Version 1.0.8: Fix diff, and add error display when creating symlinks.
 - Version 1.0.7: Added support for chunk downloads (since *Genshin Impact* 5.6 no longer provides zip packages).  
 - Version 1.0.6: Added support for *Zenless Zone Zero* (since ZZZ 1.1 provided `res_list_url`).  
 - Version 1.0.5: Uses the new launcher API; old launcher APIs are deprecated and cannot check for updates.  
 - The `patchdown` directory contains a tool for direct downloading of version-switch packages. Compile it yourself if needed.  
 
 **中文**:  
+- 1.0.8 版本：修复差别文件，增加创建符号链接时的错误提示。
 - 1.0.7 版本：增加 Chunk 下载支持（因《原神》5.6 不再提供 zip 包）。  
 - 1.0.6 版本：添加《绝区零》支持（因 ZZZ 1.1 提供了 `res_list_url`）。  
 - 1.0.5 版本：使用新启动器接口，旧版启动器接口已弃用，无法正常检查更新。  
