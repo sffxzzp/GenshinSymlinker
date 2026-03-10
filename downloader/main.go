@@ -43,9 +43,9 @@ func main() {
 		isCN = true
 	}
 	if isCN {
-		SophonCN.Download(downTypeUI[typeSelect] + "_" + input)
+		SophonCN.Download(downTypeUI[typeSelect]+"_"+input, nil)
 	} else {
-		SophonEN.Download(downTypeUI[typeSelect] + "_" + input)
+		SophonEN.Download(downTypeUI[typeSelect]+"_"+input, nil)
 	}
 	fmt.Println(downTypeUI[typeSelect] + " 下载完成！\n按回车键退出…")
 	fmt.Scanln()

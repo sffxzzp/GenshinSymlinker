@@ -180,17 +180,11 @@ func GetGameByGameType(gameType string, isCN bool) string {
 	return gameType
 }
 
-func IsPreDownload(version string) bool {
-	var input string
-	next := false
-	for strings.ToUpper(input) != "Y" && strings.ToUpper(input) != "N" {
-		fmt.Println("检测到版本 " + version + " 的预下载包，是否下载下一版本的换服包（y/N）：")
-		fmt.Scanln(&input)
+func IsPreDownload(version string, decide func(string) bool) bool {
+	if decide == nil {
+		return false
 	}
-	if strings.ToUpper(input) == "Y" {
-		next = true
-	}
-	return next
+	return decide(version)
 }
 
 func (g *Game) handlePkg(pkg *[][]byte) *map[string]string {
@@ -220,13 +214,13 @@ func (g *Game) fileDiffRaw(a *map[string]string, b *map[string]string) (o []stri
 	return o
 }
 
-func (g *Game) NCompare(urlCN, urlEN string, skip bool) {
+func (g *Game) NCompare(urlCN, urlEN string, skip bool, decide func(string) bool) {
 	var resCN, resEN Resource
 	json.Unmarshal(HttpGet(urlCN), &resCN)
 	json.Unmarshal(HttpGet(urlEN), &resEN)
 	next := false
 	if resCN.Data.GamePackages[0].PreGame.Major.Version != "" && !skip {
-		next = IsPreDownload(resCN.Data.GamePackages[0].PreGame.Major.Version)
+		next = IsPreDownload(resCN.Data.GamePackages[0].PreGame.Major.Version, decide)
 	}
 	if next {
 		g.Version = resCN.Data.GamePackages[0].PreGame.Major.Version
@@ -244,7 +238,16 @@ func (g *Game) NCompare(urlCN, urlEN string, skip bool) {
 	g.dFilesCN, g.dFilesEN = g.fileDiff(pkgFilesCN, pkgFilesEN)
 }
 
-func (g *Game) Download(isCN bool, path string) {
+type DownloadCallback func(name string, index int, total int, err error)
+
+func (g *Game) FileCount(isCN bool) int {
+	if isCN {
+		return len(g.dFilesCN)
+	}
+	return len(g.dFilesEN)
+}
+
+func (g *Game) Download(isCN bool, path string, onFile DownloadCallback) {
 	var filelist []string
 	var baseUrl string
 	if isCN {
@@ -254,18 +257,20 @@ func (g *Game) Download(isCN bool, path string) {
 		filelist = g.dFilesEN
 		baseUrl = g.baseUrlEN
 	}
-	fmt.Println("正在下载：")
-	fmt.Println("文件数：", len(filelist))
-	for _, f := range filelist {
-		fmt.Println(f)
+	total := len(filelist)
+	for i, f := range filelist {
+		if onFile != nil {
+			onFile(f, i+1, total, nil)
+		}
 		count := 0
 		for count < 3 {
 			if DownFile(baseUrl+"/"+f, filepath.Join(path, f)) {
 				break
-			} else {
-				fmt.Println("下载出错！文件：" + f)
-				count++
 			}
+			count++
+		}
+		if count >= 3 && onFile != nil {
+			onFile(f, i+1, total, fmt.Errorf("下载出错：%s", f))
 		}
 	}
 }

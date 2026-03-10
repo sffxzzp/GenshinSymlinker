@@ -231,22 +231,25 @@ func (f *SophonChunkFile) Download(urlPrefix string, path string) bool {
 	}
 }
 
-func (s *SophonGame) Download(path string) {
-	fmt.Println("正在下载：")
-	size := int64(0)
-	for _, file := range s.DiffList {
-		size += file.Size
-	}
-	fmt.Printf("总大小：%.2fMB\n", float64(size)/1024/1024)
-	fmt.Printf("文件数：%d\n", len(s.DiffList))
-	for _, file := range s.DiffList {
-		fmt.Println(file.File)
+func (s *SophonGame) FileCount() int {
+	return len(s.DiffList)
+}
+
+func (s *SophonGame) Download(path string, onFile DownloadCallback) {
+	total := len(s.DiffList)
+	for i, file := range s.DiffList {
+		if onFile != nil {
+			onFile(file.File, i+1, total, nil)
+		}
 		count := 0
 		for count < 3 {
 			if file.Download(s.ChunkPrefix, path) {
 				break
 			}
 			count++
+		}
+		if count >= 3 && onFile != nil {
+			onFile(file.File, i+1, total, fmt.Errorf("下载出错：%s", file.File))
 		}
 	}
 }

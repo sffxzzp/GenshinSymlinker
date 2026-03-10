@@ -28,7 +28,7 @@ func main() {
 			useSophon = true
 		} else {
 			gs = utils.NewGenshin()
-			gs.Compare(false)
+			gs.Compare(false, nil)
 		}
 	} else if typeSelect == 2 {
 		fmt.Println("正在加载" + downTypeUI[typeSelect] + "版本信息，请稍候…")
@@ -36,7 +36,7 @@ func main() {
 			useSophon = true
 		} else {
 			sr = utils.NewStarRail()
-			sr.Compare(false)
+			sr.Compare(false, nil)
 		}
 	} else if typeSelect == 3 {
 		fmt.Println("正在加载" + downTypeUI[typeSelect] + "版本信息，请稍候…")
@@ -44,7 +44,7 @@ func main() {
 			useSophon = true
 		} else {
 			zzz = utils.NewZZZ()
-			zzz.Compare(false)
+			zzz.Compare(false, nil)
 		}
 	}
 	if useSophon {
@@ -69,17 +69,17 @@ func main() {
 	}
 	if useSophon {
 		if isCN {
-			SophonCN.Download(downTypeUI[typeSelect] + "_" + input)
+			SophonCN.Download(downTypeUI[typeSelect]+"_"+input, nil)
 		} else {
-			SophonEN.Download(downTypeUI[typeSelect] + "_" + input)
+			SophonEN.Download(downTypeUI[typeSelect]+"_"+input, nil)
 		}
 	} else {
 		if typeSelect == 1 {
-			gs.Download(isCN, downTypeUI[typeSelect]+"_"+input)
+			gs.Download(isCN, downTypeUI[typeSelect]+"_"+input, nil)
 		} else if typeSelect == 2 {
-			sr.Download(isCN, downTypeUI[typeSelect]+"_"+input)
+			sr.Download(isCN, downTypeUI[typeSelect]+"_"+input, nil)
 		} else if typeSelect == 3 {
-			zzz.Download(isCN, downTypeUI[typeSelect]+"_"+input)
+			zzz.Download(isCN, downTypeUI[typeSelect]+"_"+input, nil)
 		}
 	}
 	fmt.Println(downTypeUI[typeSelect] + " 下载完成！\n按回车键退出…")
