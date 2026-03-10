@@ -1,10 +1,17 @@
 # GenshinSymlinker
 
-**English**:  
+**English**:
 GenshinSymlinker allows users to run both Chinese and Global versions of *Genshin Impact*, *Honkai: Star Rail*, and *Zenless Zone Zero* on the same device by using symbolic links to share game files, reducing storage usage. **(Requires Administrator Privileges)**
 
-**中文**:  
+**GUI**:
+The GUI has been updated.
+
+**中文**:
 GenshinSymlinker 允许用户在同一设备上运行《原神》、《星铁》、《绝区零》的国服与国际服，通过符号链接共享游戏文件，减少存储空间占用。 **（需要管理员权限运行）**
+
+**GUI**:
+已更新 GUI 界面，截图如下：
+![GUI Screenshot](screenshots/1.jpg)
 
 ## Notes / 注意事项
 
