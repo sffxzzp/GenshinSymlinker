@@ -12,12 +12,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Go build
+      - name: Go build (CLI)
         uses: izumin5210/action-go-crossbuild@v1.0.0
         with:
           arch: amd64
-          ldflags: "-s -w"
           os: windows
+          package: ./main.go
+          output: ./dist/GenshinSymlinker-cli
+          ldflags: "-s -w"
+      - name: Go build (GUI)
+        uses: izumin5210/action-go-crossbuild@v1.0.0
+        with:
+          arch: amd64
+          os: windows
+          package: ./cmd/gui
+          output: ./dist/GenshinSymlinker-gui
+          ldflags: "-s -w -H=windowsgui"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
