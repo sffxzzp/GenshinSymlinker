@@ -16,14 +16,24 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+      - name: Install UPX
+        uses: crazy-max/ghaction-upx@v4
+        with:
+          install-only: true
       - name: Go build (CLI)
         run: |
           mkdir -p ./dist
-          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ./dist/GenshinSymlinker-cli.exe ./main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o ./dist/GenshinSymlinker-cli.exe .
       - name: Go build (GUI)
         run: |
           mkdir -p ./dist
           GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -H=windowsgui" -o ./dist/GenshinSymlinker-gui.exe ./cmd/gui
+      - name: Copy README
+        run: |
+          cp README.md ./dist/README.md
+      - name: UPX compress
+        run: |
+          upx -9 -vf --lzma --compress-icons=0 ./dist/*.exe
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
