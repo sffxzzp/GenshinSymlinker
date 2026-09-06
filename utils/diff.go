@@ -88,6 +88,10 @@ func (d *diff) CompareFolders() map[string][]string {
 			return err
 		}
 		if dir.IsDir() {
+			// 排除 webCaches 文件夹
+			if strings.Contains(rel, "\\webCaches") {
+				return filepath.SkipDir
+			}
 			if rel != "." {
 				targetFolders = append(targetFolders, d.trimVer(rel))
 			}
